@@ -1,7 +1,11 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
+	"io/ioutil"
 	"os"
+	"strings"
 )
 
 /**
@@ -27,7 +31,7 @@ for each row {
 func main() {
 
 	filePath := os.Args[1]
-	//YearMonth := os.Args[2]
+	yearMonth := os.Args[2]
 
 	file, err := os.Open(filePath)
 	handleErr(err)
@@ -36,10 +40,55 @@ func main() {
 		handleErr(err)
 	}()
 
+	reader := bufio.NewReader(os.Stdin)
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		row := strings.Split(scanner.Text(), ";")
+		if strings.Contains(row[2], yearMonth) {
+			row[3] = strings.Replace(row[3], ",", ".", -1)
+			row[3] = strings.Replace(row[3], " ", "", -1)
+			row[3] = strings.Split(row[3], ".")[0]
+			println(row[0], row[2], row[3])
+			fmt.Print("c (clara), s (stefan), b (båda)>")
+			label, _ := reader.ReadString('\n')
+			label = strings.Replace(label, "\n", "", -1)
+			switch label {
+			case "c":
+				newSlice := []string{row[0], row[2], row[3], label}
+				newRow := []byte(strings.Join(newSlice, ","))
+				writeToFile("clara.csv", fmt.Sprintln(string(newRow)))
+				break
+			case "s":
+				newSlice := []string{row[0], row[2], row[3], label}
+				newRow := []byte(strings.Join(newSlice, ","))
+				writeToFile("stefan.csv", fmt.Sprintln(string(newRow)))
+				break
+			case "b":
+				newSlice := []string{row[0], row[2], row[3]}
+				newRow := []byte(strings.Join(newSlice, ","))
+				writeToFile("gemensam.csv", fmt.Sprintln(string(newRow)))
+				break
+			default:
+				newSlice := []string{row[0], row[2], row[3], "?"}
+				newRow := []byte(strings.Join(newSlice, ","))
+				writeToFile("undefined.csv", fmt.Sprintln(string(newRow)))
+			}
+		}
+	}
+	fmt.Println("Done")
 }
 
 func handleErr(err error) {
 	if err != nil {
 		panic("Coulen't open the file")
 	}
+}
+
+func writeToFile(fileName string, text string) {
+	if _, err := os.Stat(fileName); os.IsNotExist(err) {
+		ioutil.WriteFile(fileName, []byte(""), 0777)
+	}
+	file, _ := os.OpenFile(fileName, os.O_APPEND|os.O_WRONLY, 7777)
+	file.WriteString(text)
+	file.Close()
 }
